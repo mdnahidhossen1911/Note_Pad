@@ -1,0 +1,78 @@
+package services
+
+import (
+	"fmt"
+	"note_pad/models"
+	"note_pad/repositories"
+	"note_pad/utils"
+)
+
+// UserService defines business logic for users.
+type UserService interface {
+	Register(req *models.CreateUserRequest) (*models.User, error)
+	Login(req *models.LoginRequest) (string, error)
+	GetByID(id string) (*models.User, error)
+	List() ([]*models.User, error)
+	Update(id string, u *models.User) (*models.User, error)
+	Delete(id string) error
+}
+
+type userService struct {
+	repo          repositories.UserRepository
+	jwtSecret     string
+	jwtExpiryDays int
+	appPass       string
+	sendermail    string
+}
+
+func NewUserService(repo repositories.UserRepository, jwtSecret string, jwtExpiryDays int, appPass string, senderMail string) UserService {
+	return &userService{repo: repo, jwtSecret: jwtSecret, jwtExpiryDays: jwtExpiryDays, appPass: appPass, sendermail: senderMail}
+}
+
+func (s *userService) Register(req *models.CreateUserRequest) (*models.User, error) {
+
+	otp, err := utils.SendOTPToEmail(req.Email, req.Name, s.appPass, s.sendermail)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(otp)
+
+	u := &models.User{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: utils.HashPassword(req.Password),
+		IsOwner:  req.IsOwner,
+	}
+	return s.repo.Create(u)
+}
+
+func (s *userService) Login(req *models.LoginRequest) (string, error) {
+	u, err := s.repo.FindByEmail(req.Email)
+	if err != nil {
+		return "", models.ErrUserNotFound
+	}
+
+	if u.Password != utils.HashPassword(req.Password) {
+		return "", models.ErrInvalidPassword
+	}
+
+	return utils.GenerateJWT(u, s.jwtSecret, s.jwtExpiryDays)
+}
+
+func (s *userService) GetByID(id string) (*models.User, error) {
+	return s.repo.FindByID(id)
+}
+
+func (s *userService) List() ([]*models.User, error) {
+	return s.repo.List()
+}
+
+func (s *userService) Update(id string, u *models.User) (*models.User, error) {
+	u.ID = id
+	return s.repo.Update(u)
+}
+
+func (s *userService) Delete(id string) error {
+	return s.repo.Delete(id)
+}

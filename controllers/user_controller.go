@@ -1,0 +1,112 @@
+package controllers
+
+import (
+	"net/http"
+	"note_pad/models"
+	"note_pad/services"
+
+	"github.com/gin-gonic/gin"
+)
+
+// UserController handles all incoming HTTP requests for /users.
+// Controller (C) — receives HTTP input, calls Service, returns HTTP response.
+type UserController struct {
+	service services.UserService
+}
+
+func NewUserController(svc services.UserService) *UserController {
+	return &UserController{service: svc}
+}
+
+// Register godoc
+// POST /users
+func (ctrl *UserController) Register(c *gin.Context) {
+	var req models.CreateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := ctrl.service.Register(&req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, user)
+}
+
+// Login godoc
+// POST /users/login
+func (ctrl *UserController) Login(c *gin.Context) {
+	var req models.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	token, err := ctrl.service.Login(&req)
+	if err != nil {
+		if err == models.ErrUserNotFound || err == models.ErrInvalidPassword {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.LoginResponse{Token: token})
+}
+
+// GetByID godoc
+// GET /users/:id
+func (ctrl *UserController) GetByID(c *gin.Context) {
+	id := c.Param("id")
+	user, err := ctrl.service.GetByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+// List godoc
+// GET /users
+func (ctrl *UserController) List(c *gin.Context) {
+	users, err := ctrl.service.List()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, users)
+}
+
+// Update godoc
+// PUT /users/:id
+func (ctrl *UserController) Update(c *gin.Context) {
+	id := c.Param("id")
+
+	var u models.User
+	if err := c.ShouldBindJSON(&u); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	updated, err := ctrl.service.Update(id, &u)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, updated)
+}
+
+// Delete godoc
+// DELETE /users/:id
+func (ctrl *UserController) Delete(c *gin.Context) {
+	id := c.Param("id")
+	if err := ctrl.service.Delete(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+}
