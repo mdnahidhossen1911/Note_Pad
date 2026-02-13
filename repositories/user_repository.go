@@ -14,10 +14,35 @@ type UserRepository interface {
 	List() ([]*models.User, error)
 	Update(u *models.User) (*models.User, error)
 	Delete(id string) error
+
+	CreatePanding(u *models.PandingUser) (*models.RegisterResponce, error)
+	PandingUserFindById(id string) (*models.PandingUser, error)
+	DeletePandingUser(id string) error
 }
 
 type userRepository struct {
 	db *gorm.DB
+}
+
+// CreatePanding implements [UserRepository].
+func (r *userRepository) CreatePanding(u *models.PandingUser) (*models.RegisterResponce, error) {
+	if error := r.db.Create(u).Error; error != nil {
+		return nil, error
+	}
+	return &models.RegisterResponce{
+		UID: u.ID,
+	}, nil
+
+}
+
+// DeletePandingUser implements [UserRepository].
+func (r *userRepository) DeletePandingUser(id string) error {
+	panic("unimplemented")
+}
+
+// PandingUserFindById implements [UserRepository].
+func (r *userRepository) PandingUserFindById(id string) (*models.PandingUser, error) {
+	panic("unimplemented")
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {

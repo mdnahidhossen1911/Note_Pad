@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"note_pad/models"
 	"note_pad/repositories"
 	"note_pad/utils"
@@ -9,7 +8,7 @@ import (
 
 // UserService defines business logic for users.
 type UserService interface {
-	Register(req *models.CreateUserRequest) (*models.User, error)
+	Register(req *models.CreateUserRequest) (*models.RegisterResponce, error)
 	Login(req *models.LoginRequest) (string, error)
 	GetByID(id string) (*models.User, error)
 	List() ([]*models.User, error)
@@ -29,22 +28,33 @@ func NewUserService(repo repositories.UserRepository, jwtSecret string, jwtExpir
 	return &userService{repo: repo, jwtSecret: jwtSecret, jwtExpiryDays: jwtExpiryDays, appPass: appPass, sendermail: senderMail}
 }
 
-func (s *userService) Register(req *models.CreateUserRequest) (*models.User, error) {
+func (s *userService) Register(req *models.CreateUserRequest) (*models.RegisterResponce, error) {
 
-	otp, err := utils.SendOTPToEmail(req.Email, req.Name, s.appPass, s.sendermail)
+
+	findEmail, err := s.repo.FindByEmail(req.Email)
+	if findEmail != nil {
+		return nil, models.ErrEmailExists
+	}
+
+	otp, err := utils.GenerateOTP(6)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(otp)
+	go func() {
+		utils.SendOTPToEmail(otp, req.Email, req.Name, s.appPass, s.sendermail)
 
-	u := &models.User{
+	}()
+
+	u := &models.PandingUser{
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: utils.HashPassword(req.Password),
+		Otp:      otp,
 		IsOwner:  req.IsOwner,
 	}
-	return s.repo.Create(u)
+
+	return s.repo.CreatePanding(u)
 }
 
 func (s *userService) Login(req *models.LoginRequest) (string, error) {

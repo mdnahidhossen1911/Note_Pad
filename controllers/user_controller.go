@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"note_pad/models"
 	"note_pad/services"
+	"note_pad/utils"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,17 +25,36 @@ func NewUserController(svc services.UserService) *UserController {
 func (ctrl *UserController) Register(c *gin.Context) {
 	var req models.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+
+		if strings.Contains(err.Error(), "failed on the 'email' tag") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email address."})
+			return
+		}
+
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	user, err := ctrl.service.Register(&req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+
+		switch err {
+		case models.ErrEmailExists:
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+			return
+		}
 	}
 
-	c.JSON(http.StatusCreated, user)
+	c.JSON(http.StatusCreated, utils.ApiResponse{
+		Success: true,
+		Message: "Account created. OTP has been sent to your email.",
+		Data:    *user,
+	})
+
 }
 
 // Login godoc

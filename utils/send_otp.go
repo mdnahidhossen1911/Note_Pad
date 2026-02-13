@@ -4,23 +4,14 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/smtp"
-	"os"
 	"strings"
 	"time"
 )
 
-func SendOTPToEmail(toEmail string, UserName string, appPass string, sendermail string) (string, error) {
+func SendOTPToEmail( otp string, toEmail string, UserName string, appPass string, sendermail string) (string, error) {
 	toEmail = strings.TrimSpace(toEmail)
 	if toEmail == "" {
 		return "", fmt.Errorf("email is required")
-	}
-	if !isValidEmail(toEmail) {
-		return "", fmt.Errorf("invalid email")
-	}
-
-	otp, err := generateOTP(6)
-	if err != nil {
-		return "", err
 	}
 
 	smtpHost := "smtp.gmail.com"
@@ -140,7 +131,7 @@ func buildEmail(from, to, subject, body string) string {
 	return sb.String()
 }
 
-func generateOTP(length int) (string, error) {
+func GenerateOTP(length int) (string, error) {
 	if length <= 0 {
 		return "", fmt.Errorf("invalid otp length")
 	}
@@ -153,16 +144,4 @@ func generateOTP(length int) (string, error) {
 		digits[i] = '0' + (b[i] % 10)
 	}
 	return string(digits), nil
-}
-
-func mustEnv(key string) string {
-	v := strings.TrimSpace(os.Getenv(key))
-	if v == "" {
-		return ""
-	}
-	return v
-}
-
-func isValidEmail(email string) bool {
-	return strings.Contains(email, "@") && strings.Contains(email, ".")
 }
