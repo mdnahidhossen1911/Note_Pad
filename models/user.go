@@ -26,7 +26,12 @@ type PandingUser struct {
 }
 
 type RegisterResponce struct {
-	UID string `json:"uid" ;not null"`
+	UID string `json:"uid" binding:"required"`
+}
+
+type OtpVerifyRequest struct {
+	Otp string `json:"otp"     binding:"required"`
+	Uid string `json:"uid"     binding:"required"`
 }
 
 // ---- Request / Response DTOs ----

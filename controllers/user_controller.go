@@ -57,6 +57,34 @@ func (ctrl *UserController) Register(c *gin.Context) {
 
 }
 
+func (ctrl *UserController) OtpVerification(c *gin.Context) {
+	var req models.OtpVerifyRequest
+	if error := c.ShouldBindJSON(&req); error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": error.Error(),
+		})
+		return
+	}
+
+	token, err := ctrl.service.OtpVerification(&req)
+	if err != nil {
+
+		switch err {
+		case models.ErrOTPInvalid:
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		case models.ErrInvalidID:
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+			return
+		}
+	}
+	c.JSON(http.StatusOK, models.LoginResponse{Token: token})
+
+}
+
 // Login godoc
 // POST /users/login
 func (ctrl *UserController) Login(c *gin.Context) {

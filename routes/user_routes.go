@@ -13,6 +13,7 @@ func registerUserRoutes(rg *gin.RouterGroup, ctrl *controllers.UserController, j
 	// Public
 	users.POST("", ctrl.Register)
 	users.POST("/login", ctrl.Login)
+	users.POST("/verification", ctrl.OtpVerification)
 
 	// Protected
 	auth := users.Group("")

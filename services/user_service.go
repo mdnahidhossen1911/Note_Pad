@@ -9,6 +9,7 @@ import (
 // UserService defines business logic for users.
 type UserService interface {
 	Register(req *models.CreateUserRequest) (*models.RegisterResponce, error)
+	OtpVerification(req *models.OtpVerifyRequest) (string, error)
 	Login(req *models.LoginRequest) (string, error)
 	GetByID(id string) (*models.User, error)
 	List() ([]*models.User, error)
@@ -29,7 +30,6 @@ func NewUserService(repo repositories.UserRepository, jwtSecret string, jwtExpir
 }
 
 func (s *userService) Register(req *models.CreateUserRequest) (*models.RegisterResponce, error) {
-
 
 	findEmail, err := s.repo.FindByEmail(req.Email)
 	if findEmail != nil {
@@ -55,6 +55,44 @@ func (s *userService) Register(req *models.CreateUserRequest) (*models.RegisterR
 	}
 
 	return s.repo.CreatePanding(u)
+}
+
+// OtpVerification implements [UserService].
+func (s *userService) OtpVerification(req *models.OtpVerifyRequest) (string, error) {
+	if len(req.Otp) != 6 {
+		return "", models.ErrOTPInvalid
+	}
+
+	tuser, err := s.repo.PandingUserFindById(req.Uid)
+
+	if err != nil {
+		return "", models.ErrInvalidID
+	}
+
+	if req.Otp != tuser.Otp {
+		return "", models.ErrOTPInvalid
+	}
+
+	u := &models.User{
+		Name:     tuser.Name,
+		Email:    tuser.Email,
+		Password: tuser.Password,
+		IsOwner:  tuser.IsOwner,
+	}
+
+	user, err := s.repo.Create(u)
+	if err != nil {
+		return "", err
+	}
+
+	err = s.repo.DeletePandingUser(req.Uid)
+	if err != nil {
+		return "", err
+	}
+
+	token, err := utils.GenerateJWT(user, s.jwtSecret, s.jwtExpiryDays)
+	return token, err
+
 }
 
 func (s *userService) Login(req *models.LoginRequest) (string, error) {

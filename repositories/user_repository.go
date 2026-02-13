@@ -37,12 +37,17 @@ func (r *userRepository) CreatePanding(u *models.PandingUser) (*models.RegisterR
 
 // DeletePandingUser implements [UserRepository].
 func (r *userRepository) DeletePandingUser(id string) error {
-	panic("unimplemented")
+	result := r.db.Delete(&models.PandingUser{}, "id = ?", id)
+	return result.Error
 }
 
 // PandingUserFindById implements [UserRepository].
 func (r *userRepository) PandingUserFindById(id string) (*models.PandingUser, error) {
-	panic("unimplemented")
+	var u models.PandingUser
+	if err := r.db.First(&u, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &u, nil
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {
