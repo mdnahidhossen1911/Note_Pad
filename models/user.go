@@ -26,7 +26,7 @@ type PandingUser struct {
 }
 
 type RegisterResponce struct {
-	UID string `json:"temp_uid" ;not null"`
+	UID string `json:"uid" ;not null"`
 }
 
 // ---- Request / Response DTOs ----
