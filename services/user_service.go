@@ -4,6 +4,7 @@ import (
 	"note_pad/models"
 	"note_pad/repositories"
 	"note_pad/utils"
+	"time"
 )
 
 // UserService defines business logic for users.
@@ -78,6 +79,11 @@ func (s *userService) OtpVerification(req *models.OtpVerifyRequest) (string, err
 		Email:    tuser.Email,
 		Password: tuser.Password,
 		IsOwner:  tuser.IsOwner,
+	}
+
+	isValid := time.Since(tuser.CreatedAt).Seconds() <= 10
+	if !isValid {
+		return "", models.ErrOTPExpired
 	}
 
 	user, err := s.repo.Create(u)

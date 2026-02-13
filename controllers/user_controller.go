@@ -73,9 +73,15 @@ func (ctrl *UserController) OtpVerification(c *gin.Context) {
 		case models.ErrOTPInvalid:
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
+
 		case models.ErrInvalidID:
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
+
+		case models.ErrOTPExpired:
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 			return
