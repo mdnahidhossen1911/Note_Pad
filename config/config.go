@@ -57,7 +57,7 @@ func load() {
 
 	refreshjwtExpiryDays, err := strconv.Atoi(os.Getenv("REFRESH_JWT_EXPIRY_DAYS"))
 	if err != nil || refreshjwtExpiryDays <= 0 {
-		fmt.Println("JWT_EXPIRY_DAYS must be a positive integer")
+		fmt.Println("REFRESH_JWT_EXPIRY_DAYS must be a positive integer")
 		os.Exit(1)
 	}
 

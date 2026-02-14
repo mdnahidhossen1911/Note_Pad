@@ -1,13 +1,12 @@
 package utils
 
 import (
-	"crypto/md5"
-	"encoding/hex"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // HashPassword hashes a plain-text password with MD5.
 // (For production use bcrypt or argon2.)
 func HashPassword(password string) string {
-	h := md5.Sum([]byte(password))
-	return hex.EncodeToString(h[:])
+	b, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(b)
 }
