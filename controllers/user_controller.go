@@ -116,6 +116,33 @@ func (ctrl *UserController) Login(c *gin.Context) {
 	})
 }
 
+func (ctrl *UserController) RefrashToken(c *gin.Context) {
+	header := c.GetHeader("Authorization")
+	if header == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+		c.Abort()
+		return
+	}
+
+	parts := strings.SplitN(header, " ", 2)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Format: Bearer <token>"})
+		c.Abort()
+		return
+	}
+
+	token, err := ctrl.service.RefreshToken(parts[1])
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"access-token": token,
+	})
+	// payload, err := utils.VerifyJWT(parts[1], jwtSecret , userRepo)
+}
+
 // GetByID godoc
 // GET /users/:id
 func (ctrl *UserController) GetByID(c *gin.Context) {

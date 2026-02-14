@@ -15,6 +15,7 @@ func registerUserRoutes(rg *gin.RouterGroup, ctrl *controllers.UserController, u
 	users.POST("", ctrl.Register)
 	users.POST("/login", ctrl.Login)
 	users.POST("/verification", ctrl.OtpVerification)
+	users.GET("/refresh-token", ctrl.RefrashToken)
 
 	// Protected
 	auth := users.Group("")
