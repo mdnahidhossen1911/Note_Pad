@@ -19,7 +19,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	userRepo := repositories.NewUserRepository(db)
 
 	// ── Services (Business logic layer) ─────────────────────────────────
-	userSvc := services.NewUserService(userRepo, cfg.JwtSecureKey, cfg.JwtExpiryDays, cfg.AppPass, cfg.SenderMail)
+	userSvc := services.NewUserService(userRepo, cfg)
 
 	// ── Controllers (C in MVC) ───────────────────────────────────────────
 	userCtrl := controllers.NewUserController(userSvc)
@@ -44,6 +44,6 @@ func SetupRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	// ── API v1 ───────────────────────────────────────────────────────────
 	api := r.Group("/api/v1")
 
-	registerUserRoutes(api, userCtrl, cfg.JwtSecureKey)
+	registerUserRoutes(api, userCtrl, userRepo, cfg.JwtSecureKey)
 	return r
 }

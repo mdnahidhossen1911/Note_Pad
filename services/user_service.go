@@ -1,6 +1,7 @@
 package services
 
 import (
+	"note_pad/config"
 	"note_pad/models"
 	"note_pad/repositories"
 	"note_pad/utils"
@@ -11,7 +12,7 @@ import (
 type UserService interface {
 	Register(req *models.CreateUserRequest) (*models.RegisterResponce, error)
 	OtpVerification(req *models.OtpVerifyRequest) (string, error)
-	Login(req *models.LoginRequest) (string, error)
+	Login(req *models.LoginRequest) (*models.LoginResponse, error)
 	GetByID(id string) (*models.User, error)
 	List() ([]*models.User, error)
 	Update(id string, u *models.User) (*models.User, error)
@@ -19,15 +20,23 @@ type UserService interface {
 }
 
 type userService struct {
-	repo          repositories.UserRepository
-	jwtSecret     string
-	jwtExpiryDays int
-	appPass       string
-	sendermail    string
+	repo                 repositories.UserRepository
+	jwtSecret            string
+	jwtExpiryDays        int
+	refreshjwtExpiryDays int
+	appPass              string
+	sendermail           string
 }
 
-func NewUserService(repo repositories.UserRepository, jwtSecret string, jwtExpiryDays int, appPass string, senderMail string) UserService {
-	return &userService{repo: repo, jwtSecret: jwtSecret, jwtExpiryDays: jwtExpiryDays, appPass: appPass, sendermail: senderMail}
+func NewUserService(repo repositories.UserRepository, cfg *config.Config) UserService {
+	return &userService{
+		repo:                 repo,
+		jwtSecret:            cfg.JwtSecureKey,
+		jwtExpiryDays:        cfg.JwtExpiryDays,
+		refreshjwtExpiryDays: cfg.RefreshJwtExpiryDays,
+		appPass:              cfg.AppPass,
+		sendermail:           cfg.SenderMail,
+	}
 }
 
 func (s *userService) Register(req *models.CreateUserRequest) (*models.RegisterResponce, error) {
@@ -81,7 +90,7 @@ func (s *userService) OtpVerification(req *models.OtpVerifyRequest) (string, err
 		IsOwner:  tuser.IsOwner,
 	}
 
-	isValid := time.Since(tuser.CreatedAt).Seconds() <= 10
+	isValid := time.Since(tuser.CreatedAt).Seconds() <= 120
 	if !isValid {
 		return "", models.ErrOTPExpired
 	}
@@ -96,22 +105,29 @@ func (s *userService) OtpVerification(req *models.OtpVerifyRequest) (string, err
 		return "", err
 	}
 
-	token, err := utils.GenerateJWT(user, s.jwtSecret, s.jwtExpiryDays)
+	token, err := utils.GenerateJWT(user, utils.AccessToken, s.jwtSecret, s.jwtExpiryDays)
 	return token, err
 
 }
 
-func (s *userService) Login(req *models.LoginRequest) (string, error) {
+func (s *userService) Login(req *models.LoginRequest) (*models.LoginResponse, error) {
 	u, err := s.repo.FindByEmail(req.Email)
 	if err != nil {
-		return "", models.ErrUserNotFound
+		return nil, models.ErrUserNotFound
 	}
 
 	if u.Password != utils.HashPassword(req.Password) {
-		return "", models.ErrInvalidPassword
+		return nil, models.ErrInvalidPassword
 	}
 
-	return utils.GenerateJWT(u, s.jwtSecret, s.jwtExpiryDays)
+	token, _ := utils.GenerateJWT(u, utils.AccessToken, s.jwtSecret, s.jwtExpiryDays)
+	refreshtoken, _ := utils.GenerateJWT(u, utils.RefreshToken, s.jwtSecret, s.refreshjwtExpiryDays)
+
+	return &models.LoginResponse{
+		Token:        token,
+		RefreshToken: refreshtoken,
+	}, nil
+
 }
 
 func (s *userService) GetByID(id string) (*models.User, error) {

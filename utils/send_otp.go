@@ -21,7 +21,7 @@ func SendOTPToEmail( otp string, toEmail string, UserName string, appPass string
 
 	from := smtpUser
 	subject := "Your OTP Code"
-	expiresIn := 5 * time.Minute
+	expiresIn := 2 * time.Minute
 
 	body := buildHTMLBody(otp, UserName, int(expiresIn.Minutes()))
 

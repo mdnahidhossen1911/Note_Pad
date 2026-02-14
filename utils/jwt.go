@@ -7,35 +7,41 @@ import (
 	"encoding/json"
 	"fmt"
 	"note_pad/models"
+	"note_pad/repositories"
 	"strings"
 	"time"
 )
 
+type TokenType string
+
+const (
+	AccessToken  TokenType = "AccessToken"
+	RefreshToken TokenType = "RefreshToken"
+)
+
 type JWTPayload struct {
-	Sub       string `json:"sub"`
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	IsOwner   bool   `json:"is_owner"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	Iat       int64  `json:"iat"`
-	Exp       int64  `json:"exp"`
+	Sub     string    `json:"sub"`
+	Name    string    `json:"name"`
+	Email   string    `json:"email"`
+	IsOwner bool      `json:"is_owner"`
+	Type    TokenType `json:"type"`
+	Iat     int64     `json:"iat"`
+	Exp     int64     `json:"exp"`
 }
 
-func GenerateJWT(user *models.User, secret string, expiryDays int) (string, error) {
+func GenerateJWT(user *models.User, tokentype TokenType, secret string, expiryDays int) (string, error) {
 	header := map[string]string{"alg": "HS256", "typ": "JWT"}
 	hJSON, _ := json.Marshal(header)
 
 	now := time.Now()
 	payload := JWTPayload{
-		Sub:       user.ID,
-		Name:      user.Name,
-		Email:     user.Email,
-		IsOwner:   user.IsOwner,
-		CreatedAt: user.CreatedAt.String(),
-		UpdatedAt: user.UpdatedAt.String(),
-		Iat:       now.Unix(),
-		Exp:       now.AddDate(0, 0, expiryDays).Unix(),
+		Sub:     user.ID,
+		Name:    user.Name,
+		Email:   user.Email,
+		IsOwner: user.IsOwner,
+		Type:    tokentype,
+		Iat:     now.Unix(),
+		Exp:     now.AddDate(0, 0, expiryDays).Unix(),
 	}
 	pJSON, err := json.Marshal(payload)
 	if err != nil {
@@ -53,7 +59,7 @@ func GenerateJWT(user *models.User, secret string, expiryDays int) (string, erro
 	return msg + "." + sig, nil
 }
 
-func VerifyJWT(token, secret string) (*JWTPayload, error) {
+func VerifyJWT(token, secret string, userRepo repositories.UserRepository) (*JWTPayload, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid token")
@@ -76,6 +82,14 @@ func VerifyJWT(token, secret string) (*JWTPayload, error) {
 	var p JWTPayload
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("malformed payload")
+	}
+
+	if _, err := userRepo.FindByID(p.Sub); err != nil {
+		return nil, fmt.Errorf("User does not exist")
+	}
+
+	if p.Type != AccessToken {
+		return nil, fmt.Errorf("this endpoint requires an access token")
 	}
 
 	// Check token expiration

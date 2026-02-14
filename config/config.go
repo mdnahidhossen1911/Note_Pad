@@ -11,14 +11,15 @@ import (
 var cfg *Config
 
 type Config struct {
-	Version       string
-	ServiceName   string
-	Port          string
-	JwtSecureKey  string
-	JwtExpiryDays int
-	DbConfig      DBConfig
-	AppPass       string
-	SenderMail    string
+	Version              string
+	ServiceName          string
+	Port                 string
+	JwtSecureKey         string
+	JwtExpiryDays        int
+	RefreshJwtExpiryDays int
+	DbConfig             DBConfig
+	AppPass              string
+	SenderMail           string
 }
 
 func load() {
@@ -29,13 +30,14 @@ func load() {
 	}
 
 	required := map[string]*string{
-		"VERSION":         new(string),
-		"SERVICE_NAME":    new(string),
-		"PORT":            new(string),
-		"JWT_SECURE_KEY":  new(string),
-		"JWT_EXPIRY_DAYS": new(string),
-		"AppPass":         new(string),
-		"SenderMail":      new(string),
+		"VERSION":                 new(string),
+		"SERVICE_NAME":            new(string),
+		"PORT":                    new(string),
+		"JWT_SECURE_KEY":          new(string),
+		"JWT_EXPIRY_DAYS":         new(string),
+		"REFRESH_JWT_EXPIRY_DAYS": new(string),
+		"AppPass":                 new(string),
+		"SenderMail":              new(string),
 	}
 
 	for key := range required {
@@ -53,14 +55,21 @@ func load() {
 		os.Exit(1)
 	}
 
+	refreshjwtExpiryDays, err := strconv.Atoi(os.Getenv("REFRESH_JWT_EXPIRY_DAYS"))
+	if err != nil || refreshjwtExpiryDays <= 0 {
+		fmt.Println("JWT_EXPIRY_DAYS must be a positive integer")
+		os.Exit(1)
+	}
+
 	cfg = &Config{
-		Version:       os.Getenv("VERSION"),
-		ServiceName:   os.Getenv("SERVICE_NAME"),
-		Port:          os.Getenv("PORT"),
-		JwtSecureKey:  os.Getenv("JWT_SECURE_KEY"),
-		AppPass:       os.Getenv("AppPass"),
-		SenderMail:    os.Getenv("SenderMail"),
-		JwtExpiryDays: jwtExpiryDays,
+		Version:              os.Getenv("VERSION"),
+		ServiceName:          os.Getenv("SERVICE_NAME"),
+		Port:                 os.Getenv("PORT"),
+		JwtSecureKey:         os.Getenv("JWT_SECURE_KEY"),
+		AppPass:              os.Getenv("AppPass"),
+		SenderMail:           os.Getenv("SenderMail"),
+		JwtExpiryDays:        jwtExpiryDays,
+		RefreshJwtExpiryDays: refreshjwtExpiryDays,
 	}
 
 	loadDBConfig()

@@ -110,7 +110,10 @@ func (ctrl *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.LoginResponse{Token: token})
+	c.JSON(http.StatusOK, gin.H{
+		"Success": true,
+		"data":    *token,
+	})
 }
 
 // GetByID godoc

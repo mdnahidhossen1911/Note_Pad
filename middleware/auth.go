@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"note_pad/repositories"
 	"note_pad/utils"
 	"strings"
 	"time"
@@ -13,7 +14,7 @@ import (
 const AuthUserKey = "authUser"
 
 // AuthRequired validates the Bearer JWT token and sets user payload in context.
-func AuthRequired(jwtSecret string) gin.HandlerFunc {
+func AuthRequired(jwtSecret string, userRepo repositories.UserRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if header == "" {
@@ -29,13 +30,9 @@ func AuthRequired(jwtSecret string) gin.HandlerFunc {
 			return
 		}
 
-		payload, err := utils.VerifyJWT(parts[1], jwtSecret)
+		payload, err := utils.VerifyJWT(parts[1], jwtSecret , userRepo)
 		if err != nil {
-			errMsg := "Invalid token"
-			if err.Error() == "token expired" {
-				errMsg = "Token expired. Please login again."
-			}
-			c.JSON(http.StatusUnauthorized, gin.H{"error": errMsg})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			c.Abort()
 			return
 		}
