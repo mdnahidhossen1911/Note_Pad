@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func registerUserRoutes(rg *gin.RouterGroup, ctrl *controllers.UserController, userRepo repositories.UserRepository, jwtSecret string) {
+func registerUserRoutes(rg *gin.RouterGroup, ctrl controllers.UserController, userRepo repositories.UserRepository, jwtSecret string) {
 	users := rg.Group("/users")
 
 	// Public

@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func registerNoteRoutes(rg *gin.RouterGroup, ctrl *controllers.UserController, userRepo repositories.UserRepository, jwtSecret string) {
+func registerNoteRoutes(rg *gin.RouterGroup, ctrl controllers.UserController, userRepo repositories.UserRepository, jwtSecret string) {
 	note := rg.Group("/note")
 
 	auth := note.Group("")

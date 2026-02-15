@@ -12,7 +12,7 @@ type UserService interface {
 	Register(req *models.CreateUserRequest) (*models.RegisterResponce, error)
 	OtpVerification(req *models.OtpVerifyRequest) (string, error)
 	RefreshToken(secret string) (string, error)
-	Login(req *models.LoginRequest) (*models.LoginResponse, error)
+	Login(req *models.LoginRequest) (*models.TokenResponse, error)
 	GetByID(id string) (*models.User, error)
 	GetProfile(token string) (*models.User, error)
 	List() ([]*models.User, error)

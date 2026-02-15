@@ -10,30 +10,45 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// UserController handles all incoming HTTP requests for /users.
-// Controller (C) — receives HTTP input, calls Service, returns HTTP response.
-type UserController struct {
+type UserController interface {
+	Register(c *gin.Context)
+	OtpVerification(c *gin.Context)
+	Login(c *gin.Context)
+	RefrashToken(c *gin.Context)
+
+	GetByID(c *gin.Context)
+	GetProfile(c *gin.Context)
+	List(c *gin.Context)
+	Update(c *gin.Context)
+	Delete(c *gin.Context)
+}
+
+type userController struct {
 	service userService.UserService
 }
 
-func NewUserController(svc userService.UserService) *UserController {
-	return &UserController{
+func NewUserController(svc userService.UserService) UserController {
+	return &userController{
 		service: svc,
 	}
 }
 
-// Register godoc
-// POST /users
-func (ctrl *UserController) Register(c *gin.Context) {
+func (ctrl *userController) Register(c *gin.Context) {
 	var req models.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 
 		if strings.Contains(err.Error(), "failed on the 'email' tag") {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email address."})
+			c.JSON(http.StatusBadRequest, utils.ApiResponse{
+				Success: false,
+				Message: "Invalid email address.",
+			})
 			return
 		}
 
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, utils.ApiResponse{
+			Success: false,
+			Message: err.Error(),
+		})
 		return
 	}
 
@@ -42,11 +57,17 @@ func (ctrl *UserController) Register(c *gin.Context) {
 
 		switch err {
 		case models.ErrEmailExists:
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			c.JSON(http.StatusConflict, utils.ApiResponse{
+				Success: false,
+				Message: err.Error(),
+			})
 			return
 
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+			c.JSON(http.StatusInternalServerError, utils.ApiResponse{
+				Success: false,
+				Message: "Internal server error",
+			})
 			return
 		}
 	}
@@ -59,11 +80,12 @@ func (ctrl *UserController) Register(c *gin.Context) {
 
 }
 
-func (ctrl *UserController) OtpVerification(c *gin.Context) {
+func (ctrl *userController) OtpVerification(c *gin.Context) {
 	var req models.OtpVerifyRequest
 	if error := c.ShouldBindJSON(&req); error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": error.Error(),
+		c.JSON(http.StatusBadRequest, utils.ApiResponse{
+			Success: false,
+			Message: error.Error(),
 		})
 		return
 	}
@@ -73,159 +95,220 @@ func (ctrl *UserController) OtpVerification(c *gin.Context) {
 
 		switch err {
 		case models.ErrOTPInvalid:
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest,
+				utils.ApiResponse{
+					Success: false,
+					Message: err.Error(),
+				})
 			return
 
 		case models.ErrInvalidID:
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest,
+				utils.ApiResponse{
+					Success: false,
+					Message: err.Error(),
+				})
 			return
 
 		case models.ErrOTPExpired:
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest,
+				utils.ApiResponse{
+					Success: false,
+					Message: err.Error(),
+				})
 			return
 
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+			c.JSON(http.StatusBadRequest,
+				utils.ApiResponse{
+					Success: false,
+					Message: "Internal server error",
+				})
 			return
 		}
 	}
-	c.JSON(http.StatusOK, models.LoginResponse{Token: token})
+	c.JSON(http.StatusOK, utils.ApiResponse{
+		Success: true,
+		Message: "Otp Verification Successful",
+		Data:    models.TokenResponse{Token: token},
+	})
 
 }
 
-// Login godoc
-// POST /users/login
-func (ctrl *UserController) Login(c *gin.Context) {
+func (ctrl *userController) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, utils.ApiResponse{
+			Success: false,
+			Message: err.Error(),
+		})
 		return
 	}
 
 	token, err := ctrl.service.Login(&req)
 	if err != nil {
 		if err == models.ErrUserNotFound || err == models.ErrInvalidPassword {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+			c.JSON(http.StatusUnauthorized, utils.ApiResponse{
+				Success: false,
+				Message: "Invalid credentials",
+			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, utils.ApiResponse{
+			Success: false,
+			Message: err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"Success": true,
-		"data":    *token,
+	c.JSON(http.StatusOK, utils.ApiResponse{
+		Success: true,
+		Message: "Login Successful",
+		Data:    *token,
 	})
 }
 
-func (ctrl *UserController) RefrashToken(c *gin.Context) {
+func (ctrl *userController) RefrashToken(c *gin.Context) {
 	header := c.GetHeader("Authorization")
 	if header == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+		c.JSON(http.StatusUnauthorized, utils.ApiResponse{
+			Success: false,
+			Message: "Authorization header required",
+		})
 		c.Abort()
 		return
 	}
 
 	parts := strings.SplitN(header, " ", 2)
 	if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Format: Bearer <token>"})
+		c.JSON(http.StatusUnauthorized, utils.ApiResponse{
+			Success: false,
+			Message: "Format: Bearer <token>",
+		})
 		c.Abort()
 		return
 	}
 
 	token, err := ctrl.service.RefreshToken(parts[1])
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, utils.ApiResponse{
+			Success: false,
+			Message: err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"access-token": token,
+	c.JSON(http.StatusOK, utils.ApiResponse{
+		Success: true,
+		Message: "Access Token Genaret Successful",
+		Data:    models.TokenResponse{Token: token},
 	})
 	// payload, err := utils.VerifyJWT(parts[1], jwtSecret , userRepo)
 }
 
-// GetByID godoc
-// GET /users/:id
-func (ctrl *UserController) GetByID(c *gin.Context) {
+func (ctrl *userController) GetByID(c *gin.Context) {
 	id := c.Param("id")
 	user, err := ctrl.service.GetByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		c.JSON(http.StatusNotFound, utils.ApiResponse{
+			Success: false,
+			Message: "User not found",
+		})
 		return
 	}
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, utils.ApiResponse{
+		Success: true,
+		Data:    user,
+	})
 }
 
-func (ctrl *UserController) GetProfile(c *gin.Context) {
+func (ctrl *userController) GetProfile(c *gin.Context) {
 
 	header := c.GetHeader("Authorization")
 	if header == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+		c.JSON(http.StatusUnauthorized, utils.ApiResponse{
+			Success: false,
+			Message: "Authorization header required",
+		})
 		c.Abort()
 		return
 	}
 
 	parts := strings.SplitN(header, " ", 2)
 	if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Format: Bearer <token>"})
+		c.JSON(http.StatusUnauthorized, utils.ApiResponse{
+			Success: false,
+			Message: "Format: Bearer <token>",
+		})
 		c.Abort()
 		return
 	}
 
 	user, err := ctrl.service.GetProfile(parts[1])
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": "internal server error",
+		c.JSON(http.StatusInternalServerError, utils.ApiResponse{
+			Success: false,
+			Data:    "internal server error",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    user,
+	c.JSON(http.StatusOK, utils.ApiResponse{
+		Success: true,
+		Data:    user,
 	})
 
 }
 
-// List godoc
-// GET /users
-func (ctrl *UserController) List(c *gin.Context) {
+func (ctrl *userController) List(c *gin.Context) {
 	users, err := ctrl.service.List()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, utils.ApiResponse{
+			Success: false,
+			Message: err.Error(),
+		})
 		return
 	}
-	c.JSON(http.StatusOK, users)
+	c.JSON(http.StatusOK, utils.ApiResponse{
+		Success: true,
+		Data:    users,
+	})
 }
 
-// Update godoc
-// PUT /users/:id
-func (ctrl *UserController) Update(c *gin.Context) {
+func (ctrl *userController) Update(c *gin.Context) {
 	id := c.Param("id")
 
 	var u models.User
 	if err := c.ShouldBindJSON(&u); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, utils.ApiResponse{
+			Success: false,
+			Message: err.Error(),
+		})
 		return
 	}
 
 	updated, err := ctrl.service.Update(id, &u)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, utils.ApiResponse{
+			Success: false,
+			Message: err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, updated)
 }
 
-// Delete godoc
-// DELETE /users/:id
-func (ctrl *UserController) Delete(c *gin.Context) {
+func (ctrl *userController) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if err := ctrl.service.Delete(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, utils.ApiResponse{
+			Success: false,
+			Message: err.Error(),
+		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+	c.JSON(http.StatusOK, utils.ApiResponse{
+		Success: true,
+		Message: "User deleted successfully",
+	})
 }
