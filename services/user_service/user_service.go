@@ -4,6 +4,7 @@ import (
 	"note_pad/config"
 	"note_pad/models"
 	"note_pad/repositories"
+	"note_pad/utils"
 )
 
 // UserService defines business logic for users.
@@ -13,6 +14,7 @@ type UserService interface {
 	RefreshToken(secret string) (string, error)
 	Login(req *models.LoginRequest) (*models.LoginResponse, error)
 	GetByID(id string) (*models.User, error)
+	GetProfile(token string) (*models.User, error)
 	List() ([]*models.User, error)
 	Update(id string, u *models.User) (*models.User, error)
 	Delete(id string) error
@@ -36,6 +38,16 @@ func NewUserService(repo repositories.UserRepository, cfg *config.Config) UserSe
 		appPass:              cfg.AppPass,
 		sendermail:           cfg.SenderMail,
 	}
+}
+
+func (s *userService) GetProfile(token string) (*models.User, error) {
+
+	payload, err := utils.DecodeJWT(token, s.jwtSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.repo.FindByID(payload.Sub)
 }
 
 func (s *userService) GetByID(id string) (*models.User, error) {

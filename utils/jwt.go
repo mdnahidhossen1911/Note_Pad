@@ -99,3 +99,32 @@ func VerifyJWT(token, secret string, userRepo repositories.UserRepository) (*JWT
 
 	return &p, nil
 }
+
+func DecodeJWT(token, secret string) (*JWTPayload, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	msg := parts[0] + "." + parts[1]
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(msg))
+	expected := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+
+	if expected != parts[2] {
+		return nil, fmt.Errorf("invalid signature")
+	}
+
+	raw, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid payload")
+	}
+
+	var p JWTPayload
+	if err := json.Unmarshal(raw, &p); err != nil {
+		return nil, fmt.Errorf("malformed payload")
+	}
+
+	return &p, nil
+}
+

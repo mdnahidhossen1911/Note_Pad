@@ -17,7 +17,9 @@ type UserController struct {
 }
 
 func NewUserController(svc userService.UserService) *UserController {
-	return &UserController{service: svc}
+	return &UserController{
+		service: svc,
+	}
 }
 
 // Register godoc
@@ -153,6 +155,38 @@ func (ctrl *UserController) GetByID(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, user)
+}
+
+func (ctrl *UserController) GetProfile(c *gin.Context) {
+
+	header := c.GetHeader("Authorization")
+	if header == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+		c.Abort()
+		return
+	}
+
+	parts := strings.SplitN(header, " ", 2)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Format: Bearer <token>"})
+		c.Abort()
+		return
+	}
+
+	user, err := ctrl.service.GetProfile(parts[1])
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    user,
+	})
+
 }
 
 // List godoc

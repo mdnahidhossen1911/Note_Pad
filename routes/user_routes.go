@@ -22,6 +22,7 @@ func registerUserRoutes(rg *gin.RouterGroup, ctrl *controllers.UserController, u
 	auth.Use(middleware.AuthRequired(jwtSecret, userRepo))
 	{
 		auth.GET("", ctrl.List)
+		auth.GET("/profile", ctrl.GetProfile)
 		auth.GET("/:id", ctrl.GetByID)
 		auth.PUT("/:id", ctrl.Update)
 		auth.DELETE("/:id", ctrl.Delete)
