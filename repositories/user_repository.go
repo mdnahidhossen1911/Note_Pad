@@ -24,6 +24,11 @@ type userRepository struct {
 	db *gorm.DB
 }
 
+
+func NewUserRepository(db *gorm.DB) UserRepository {
+	return &userRepository{db: db}
+}
+
 // CreatePanding implements [UserRepository].
 func (r *userRepository) CreatePanding(u *models.PandingUser) (*models.RegisterResponce, error) {
 	if error := r.db.Create(u).Error; error != nil {
@@ -50,9 +55,6 @@ func (r *userRepository) PandingUserFindById(id string) (*models.PandingUser, er
 	return &u, nil
 }
 
-func NewUserRepository(db *gorm.DB) UserRepository {
-	return &userRepository{db: db}
-}
 
 func (r *userRepository) Create(u *models.User) (*models.User, error) {
 	if err := r.db.Create(u).Error; err != nil {

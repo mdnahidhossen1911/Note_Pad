@@ -3,7 +3,7 @@ package controllers
 import (
 	"net/http"
 	"note_pad/models"
-	"note_pad/services"
+	userService "note_pad/services/user_service"
 	"note_pad/utils"
 	"strings"
 
@@ -13,10 +13,10 @@ import (
 // UserController handles all incoming HTTP requests for /users.
 // Controller (C) — receives HTTP input, calls Service, returns HTTP response.
 type UserController struct {
-	service services.UserService
+	service userService.UserService
 }
 
-func NewUserController(svc services.UserService) *UserController {
+func NewUserController(svc userService.UserService) *UserController {
 	return &UserController{service: svc}
 }
 

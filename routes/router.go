@@ -5,7 +5,7 @@ import (
 	"note_pad/controllers"
 	"note_pad/middleware"
 	"note_pad/repositories"
-	"note_pad/services"
+	userService "note_pad/services/user_service"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -17,9 +17,14 @@ func SetupRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
 	// ── Repositories (Model / Data layer) ───────────────────────────────
 	userRepo := repositories.NewUserRepository(db)
+	noteRepo := repositories.NewNoteRepository(db)
+
+	if noteRepo != nil {
+		// wrte condition
+	}
 
 	// ── Services (Business logic layer) ─────────────────────────────────
-	userSvc := services.NewUserService(userRepo, cfg)
+	userSvc := userService.NewUserService(userRepo, cfg)
 
 	// ── Controllers (C in MVC) ───────────────────────────────────────────
 	userCtrl := controllers.NewUserController(userSvc)
