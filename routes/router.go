@@ -2,34 +2,28 @@ package routes
 
 import (
 	"note_pad/config"
-	"note_pad/controllers"
+	notecontroller "note_pad/controllers/note_controller"
+	usercontroller "note_pad/controllers/user_controller"
 	"note_pad/middleware"
 	"note_pad/repositories"
+	noteservice "note_pad/services/note_service"
 	userService "note_pad/services/user_service"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-// SetupRouter wires up all dependencies and registers all routes.
-// This is the composition root — Model ↔ Service ↔ Controller ↔ Route.
 func SetupRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
-	// ── Repositories (Model / Data layer) ───────────────────────────────
 	userRepo := repositories.NewUserRepository(db)
 	noteRepo := repositories.NewNoteRepository(db)
 
-	if noteRepo != nil {
-		// wrte condition
-	}
-
-	// ── Services (Business logic layer) ─────────────────────────────────
 	userSvc := userService.NewUserService(userRepo, cfg)
+	noteSvc := noteservice.NewNoteService(cfg.JwtSecureKey, noteRepo)
 
-	// ── Controllers (C in MVC) ───────────────────────────────────────────
-	userCtrl := controllers.NewUserController(userSvc)
+	userCtrl := usercontroller.NewUserController(userSvc)
+	noteCtrl := notecontroller.NewNoteController(noteSvc)
 
-	// ── Gin Engine ───────────────────────────────────────────────────────
 	r := gin.New()
 
 	// Global middleware
@@ -50,5 +44,6 @@ func SetupRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	api := r.Group("/api/v1")
 
 	registerUserRoutes(api, userCtrl, userRepo, cfg.JwtSecureKey)
+	registerNoteRoutes(api, noteCtrl, userRepo, cfg.JwtSecureKey)
 	return r
 }

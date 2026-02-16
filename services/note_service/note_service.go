@@ -1,0 +1,51 @@
+package noteservice
+
+import (
+	"note_pad/models"
+	"note_pad/repositories"
+)
+
+type NoteService interface {
+	Create(note models.NoteRequest) (*models.Note, error)
+	Get(id string) (*models.Note, error)
+	GetProfile(token string) (*models.Note, error)
+	Update(models.Note) (*models.Note, error)
+	Delete(id string) (string, error)
+}
+
+type noteService struct {
+	repo repositories.NoteRepository
+	jwtSecret string
+}
+
+func NewNoteService(key string, repo repositories.NoteRepository) NoteService {
+	return noteService{
+		jwtSecret: key,
+		repo: repo,
+	}
+}
+
+// Create implements [NoteService].
+func (n noteService) Create(note models.NoteRequest) (*models.Note, error) {
+	panic("unimplemented")
+}
+
+// Delete implements [NoteService].
+func (n noteService) Delete(id string) (string, error) {
+	panic("unimplemented")
+}
+
+// Get implements [NoteService].
+func (n noteService) Get(id string) (*models.Note, error) {
+	panic("unimplemented")
+}
+
+// GetProfile implements [NoteService].
+func (n noteService) GetProfile(token string) (*models.Note, error) {
+	panic("unimplemented")
+}
+
+// Update implements [NoteService].
+func (n noteService) Update(models.Note) (*models.Note, error) {
+	panic("unimplemented")
+}
