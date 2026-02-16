@@ -11,8 +11,8 @@ type noteRepository struct {
 }
 
 type NoteRepository interface {
-	Create(note *models.NoteRequest) (*models.Note, error)
-	List(Id string) ([]models.Note, error)
+	Create(note *models.Note) (*models.Note, error)
+	List(Id string) (*[]models.Note, error)
 	Update(req *models.NoteUpdateRequest) (*models.Note, error)
 	Delete(Id string) (string, error)
 }
@@ -22,8 +22,13 @@ func NewNoteRepository(db *gorm.DB) NoteRepository {
 }
 
 // Create implements [NoteRepository].
-func (n noteRepository) Create(note *models.NoteRequest) (*models.Note, error) {
-	panic("unimplemented")
+func (n noteRepository) Create(note *models.Note) (*models.Note, error) {
+
+	if err := n.db.Create(note).Error; err != nil {
+		return nil, err
+	}
+	return note, nil
+
 }
 
 // Delete implements [NoteRepository].
@@ -32,7 +37,7 @@ func (n noteRepository) Delete(Id string) (string, error) {
 }
 
 // List implements [NoteRepository].
-func (n noteRepository) List(Id string) ([]models.Note, error) {
+func (n noteRepository) List(Id string) (*[]models.Note, error) {
 	panic("unimplemented")
 }
 

@@ -1,7 +1,10 @@
 package notecontroller
 
 import (
+	"net/http"
+	"note_pad/models"
 	noteservice "note_pad/services/note_service"
+	"note_pad/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,9 +27,32 @@ type notecontroller struct {
 	service noteservice.NoteService
 }
 
-// Create implements [NoteController].
 func (n notecontroller) Create(c *gin.Context) {
-	panic("unimplemented")
+	var req models.NoteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ApiResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	token := utils.GetTokenFromHeader(c)
+
+	note, error := n.service.Create(&req, token)
+	if error != nil {
+		c.JSON(http.StatusInternalServerError, utils.ApiResponse{
+			Success: false,
+			Message: error.Error(),
+		})
+	}
+
+	c.JSON(http.StatusCreated, utils.ApiResponse{
+		Success: true,
+		Message: "Note Created",
+		Data:    note,
+	})
+
 }
 
 // Delete implements [NoteController].

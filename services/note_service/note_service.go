@@ -3,10 +3,11 @@ package noteservice
 import (
 	"note_pad/models"
 	"note_pad/repositories"
+	"note_pad/utils"
 )
 
 type NoteService interface {
-	Create(note models.NoteRequest) (*models.Note, error)
+	Create(note *models.NoteRequest, token string) (*models.Note, error)
 	Get(id string) (*models.Note, error)
 	GetProfile(token string) (*models.Note, error)
 	Update(models.Note) (*models.Note, error)
@@ -14,20 +15,34 @@ type NoteService interface {
 }
 
 type noteService struct {
-	repo repositories.NoteRepository
+	repo      repositories.NoteRepository
 	jwtSecret string
 }
 
 func NewNoteService(key string, repo repositories.NoteRepository) NoteService {
 	return noteService{
 		jwtSecret: key,
-		repo: repo,
+		repo:      repo,
 	}
 }
 
 // Create implements [NoteService].
-func (n noteService) Create(note models.NoteRequest) (*models.Note, error) {
-	panic("unimplemented")
+func (n noteService) Create(note *models.NoteRequest, token string) (*models.Note, error) {
+
+	payload, err := utils.DecodeJWT(token, n.jwtSecret)
+
+	if err != nil {
+		return nil, err
+	}
+
+	noteData := &models.Note{
+		UID:   payload.Sub,
+		Title: note.Title,
+		Body:  note.Body,
+	}
+
+	return n.repo.Create(noteData)
+
 }
 
 // Delete implements [NoteService].

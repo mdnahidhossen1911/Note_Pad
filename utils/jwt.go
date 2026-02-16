@@ -10,6 +10,8 @@ import (
 	"note_pad/repositories"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type TokenType string
@@ -128,3 +130,9 @@ func DecodeJWT(token, secret string) (*JWTPayload, error) {
 	return &p, nil
 }
 
+func GetTokenFromHeader(c *gin.Context) string {
+	header := c.GetHeader("Authorization")
+	parts := strings.SplitN(header, " ", 2)
+	token := parts[1]
+	return token
+}
