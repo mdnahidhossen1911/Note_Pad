@@ -8,7 +8,7 @@ import (
 
 type NoteService interface {
 	Create(note *models.NoteRequest, token string) (*models.Note, error)
-	Get(id string) (*models.Note, error)
+	Get(token string) ([]*models.Note, error)
 	GetProfile(token string) (*models.Note, error)
 	Update(models.Note) (*models.Note, error)
 	Delete(id string) (string, error)
@@ -45,13 +45,19 @@ func (n noteService) Create(note *models.NoteRequest, token string) (*models.Not
 
 }
 
-// Delete implements [NoteService].
-func (n noteService) Delete(id string) (string, error) {
-	panic("unimplemented")
+// Get implements [NoteService].
+func (n noteService) Get(token string) ([]*models.Note, error) {
+
+	payload, err := utils.DecodeJWT(token, n.jwtSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return n.repo.List(payload.Sub)
 }
 
-// Get implements [NoteService].
-func (n noteService) Get(id string) (*models.Note, error) {
+// Delete implements [NoteService].
+func (n noteService) Delete(id string) (string, error) {
 	panic("unimplemented")
 }
 

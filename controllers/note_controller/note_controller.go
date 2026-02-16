@@ -62,7 +62,21 @@ func (n notecontroller) Delete(c *gin.Context) {
 
 // Get implements [NoteController].
 func (n notecontroller) Get(c *gin.Context) {
-	panic("unimplemented")
+	token := utils.GetTokenFromHeader(c)
+
+	notes, err := n.service.Get(token)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ApiResponse{
+			Success: false,
+			Message: "Internal server error",
+		})
+	}
+
+	c.JSON(http.StatusOK, utils.ApiResponse{
+		Success: true,
+		Data:    notes,
+	})
+
 }
 
 // GetById implements [NoteController].
