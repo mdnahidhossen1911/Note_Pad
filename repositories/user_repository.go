@@ -24,7 +24,6 @@ type userRepository struct {
 	db *gorm.DB
 }
 
-
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
@@ -54,7 +53,6 @@ func (r *userRepository) PandingUserFindById(id string) (*models.PandingUser, er
 	}
 	return &u, nil
 }
-
 
 func (r *userRepository) Create(u *models.User) (*models.User, error) {
 	if err := r.db.Create(u).Error; err != nil {
@@ -89,8 +87,7 @@ func (r *userRepository) List() ([]*models.User, error) {
 
 func (r *userRepository) Update(u *models.User) (*models.User, error) {
 	if err := r.db.Model(u).Updates(map[string]interface{}{
-		"name":  u.Name,
-		"email": u.Email,
+		"name": u.Name,
 	}).Error; err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"note_pad/models"
 
 	"gorm.io/gorm"
@@ -42,11 +43,35 @@ func (n noteRepository) List(UId string) ([]*models.Note, error) {
 }
 
 // Delete implements [NoteRepository].
-func (n noteRepository) Delete(Id string) (string, error) {
-	panic("unimplemented")
+func (n noteRepository) Delete(id string) (string, error) {
+
+	result := n.db.Delete(&models.Note{}, "id = ?", id)
+
+	if result.Error != nil {
+		return "", result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return "", fmt.Errorf("note not found")
+	}
+
+	return fmt.Sprintf("Note deleted successfully. ID: %s", id), nil
 }
 
 // Update implements [NoteRepository].
 func (n noteRepository) Update(req *models.NoteUpdateRequest) (*models.Note, error) {
-	panic("unimplemented")
+
+	var note models.Note
+	if err := n.db.Model(note).Where("id=?", req.ID).Updates(map[string]interface{}{
+		"body":  req.Body,
+		"title": req.Title,
+	}).Error; err != nil {
+		return nil, err
+	}
+
+	if err := n.db.Where("id = ?", req.ID).Find(&note).Error; err != nil {
+		return nil, err
+	}
+	return &note, nil
+
 }

@@ -10,7 +10,7 @@ type NoteService interface {
 	Create(note *models.NoteRequest, token string) (*models.Note, error)
 	Get(token string) ([]*models.Note, error)
 	GetProfile(token string) (*models.Note, error)
-	Update(models.Note) (*models.Note, error)
+	Update(note models.NoteUpdateRequest) (*models.Note, error)
 	Delete(id string) (string, error)
 }
 
@@ -58,7 +58,9 @@ func (n noteService) Get(token string) ([]*models.Note, error) {
 
 // Delete implements [NoteService].
 func (n noteService) Delete(id string) (string, error) {
-	panic("unimplemented")
+
+	return n.repo.Delete(id)
+
 }
 
 // GetProfile implements [NoteService].
@@ -67,6 +69,6 @@ func (n noteService) GetProfile(token string) (*models.Note, error) {
 }
 
 // Update implements [NoteService].
-func (n noteService) Update(models.Note) (*models.Note, error) {
-	panic("unimplemented")
+func (n noteService) Update(note models.NoteUpdateRequest) (*models.Note, error) {
+	return n.repo.Update(&note)
 }

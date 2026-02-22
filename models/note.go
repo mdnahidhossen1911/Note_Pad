@@ -17,7 +17,7 @@ type NoteRequest struct {
 }
 
 type NoteUpdateRequest struct {
-	ID    string `json:"id" binding:"required"`
+	ID    string `json:"id"`
 	Title string `json:"title"`
 	Body  string `josn:"body"`
 }

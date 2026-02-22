@@ -12,10 +12,19 @@ func (ctrl *userController) Update(c *gin.Context) {
 	id := c.Param("id")
 
 	var u models.User
+
 	if err := c.ShouldBindJSON(&u); err != nil {
 		c.JSON(http.StatusBadRequest, utils.ApiResponse{
 			Success: false,
-			Message: err.Error(),
+			Message: "Invalid payload",
+		})
+		return
+	}
+
+	if u.Name == "" {
+		c.JSON(http.StatusBadRequest, utils.ApiResponse{
+			Success: false,
+			Message: "Name is requird. Key:name",
 		})
 		return
 	}
